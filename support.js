@@ -70,32 +70,42 @@ const createZipFile = function(name, files, borderel) {
 /**
  * @method createMetaData
  */
-const createMetadata = function(report,files) {
-  const fileElements = files.map((file) => {Bestand: {Bestandsnaam: file.filename}});
-  console.log(fileElements);
+const createMetadata = async function(report,files,sleutel = 'test') {
   // see https://github.com/oozcitak/xmlbuilder-js/wiki
-  const xml = xmlbuilder.create('n1:Borderel')
+  const xml = xmlbuilder.create('ns1:Borderel')
           .att('xsi:schemaLocation', 'http://MFT-01-00.abb.vlaanderen.be/Borderel Borderel.xsd')
           .att('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
-          .att('xmlns:ns1', 'http://MFT-01-00.abb.vlaanderen.be/Borderel')
-          .ele({Bestanden: fileElements})
-          .ele({
-            'n1:RouteringsMetadata': {
-              Entiteit:'ABB',
-              Toepassing: 'BBC DR',
-              ParameterSet: {
-                ParameterParameterWaarde: {
-                  Parameter: 'SLEUTEL'
-                }
-              }
-            }
-          });
+          .att('xmlns:ns1', 'http://MFT-01-00.abb.vlaanderen.be/Borderel');
+  xml.ele({
+    'n1:RouteringsMetadata': {
+      Entiteit:'ABB',
+      Toepassing: 'BBC DR'
+    }
+  });
+  const parameterSet = xml.ele('ParameterSet');
+  parameterSet.ele(
+    {
+      ParameterParameterWaarde: {
+        Parameter: 'SLEUTEL',
+        ParameterWaarde: sleutel
+      }
+    }
+  );
+  parameterSet.ele(
+    {
+      ParameterParameterWaarde: {
+        Parameter: 'FLOW',
+        ParameterWaarde: 'AANLEVERING GEDAAN'
+      }
+    }
+  );
+  const bestandenElement = xml.root().ele('ns1:Bestanden');
+  files.forEach( (file) => bestandenElement.ele({Bestand: {Bestandsnaam: file.filename}}));
+
   const output = xml.end({pretty: true});
-  console.log(output);
-  const filename = `${packagePath}/${report.id}-borderel.xml`;
-  fs.writeFile(filename, output, (err) => {
+  const filename = `${filePath}${report.id}-borderel.xml`;
+  await fs.writeFile(filename, output, (err) => {
     if (err) throw err;
-    console.log('created borderel');
   });
   return filename;
 };
