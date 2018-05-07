@@ -145,8 +145,13 @@ const updateInternalReportStatus = async function(report, status) {
                                     bbcdr:status ${sparqlEscapeUri(status)}.
        }
        WHERE {
-         ${sparqlEscapeUri(report)} dcterms:modified ?modified.
-         OPTIONAL{ ${sparqlEscapeUri(report)} bbcdr:status ?status }
+         {
+           ${sparqlEscapeUri(report)} dcterms:modified ?modified.
+         }
+         UNION
+         {
+           OPTIONAL{ ${sparqlEscapeUri(report)} bbcdr:status ?status }
+         }
        }
   `);
 };
