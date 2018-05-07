@@ -76,36 +76,32 @@ const createZipFile = async function(name, files, borderel) {
  */
 const createMetadata = async function(report,files,sleutel = 'test') {
   // see https://github.com/oozcitak/xmlbuilder-js/wiki
-  const xml = xmlbuilder.create('ns1:Borderel')
+  const xml = xmlbuilder.create('ns1:Borderel', {}, {}, {separateArrayItems: true})
           .att('xsi:schemaLocation', 'http://MFT-01-00.abb.vlaanderen.be/Borderel Borderel.xsd')
           .att('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
           .att('xmlns:ns1', 'http://MFT-01-00.abb.vlaanderen.be/Borderel');
   xml.ele({
-    'n1:RouteringsMetadata': {
+    'ns1:RouteringsMetadata': {
       Entiteit:'ABB',
-      Toepassing: 'BBC DR'
+      Toepassing: 'BBC DR',
+      'ParameterSet': [
+        {
+          ParameterParameterWaarde: {
+            Parameter: 'SLEUTEL',
+            ParameterWaarde: sleutel
+          }
+        },
+        {
+          ParameterParameterWaarde: {
+            Parameter: 'FLOW',
+            ParameterWaarde: 'AANLEVERING GEDAAN'
+          }
+        }
+      ],
+      'ns1:Bestanden': files.map( (file => { return {Bestand: {Bestandsnaam: file.filename}};}))
     }
-  });
-  const parameterSet = xml.ele('ParameterSet');
-  parameterSet.ele(
-    {
-      ParameterParameterWaarde: {
-        Parameter: 'SLEUTEL',
-        ParameterWaarde: sleutel
-      }
-    }
+  }
   );
-  parameterSet.ele(
-    {
-      ParameterParameterWaarde: {
-        Parameter: 'FLOW',
-        ParameterWaarde: 'AANLEVERING GEDAAN'
-      }
-    }
-  );
-  const bestandenElement = xml.root().ele('ns1:Bestanden');
-  files.forEach( (file) => bestandenElement.ele({Bestand: {Bestandsnaam: file.filename}}));
-
   const output = xml.end({pretty: true});
   const filename = `${filePath}${report.id}-borderel.xml`;
   await fs.writeFile(filename, output, (err) => {

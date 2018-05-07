@@ -47,6 +47,5 @@ app.post('/package-bbcdr-reports/', async function( req, res ) {
   }
   catch(e) {
     console.log(e);
-    res.status(500).send({status: 500, title: e.message});
   }
 });
