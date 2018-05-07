@@ -31,7 +31,8 @@ app.post('/package-bbcdr-reports/', async function( req, res ) {
     if (await isRunning())
       return res.status(503).end();
     const reports = await fetchReportsToBePackaged();
-    reports.forEach( async (report) => {
+    res.status(202).send({status:202, title: 'processing'});
+    await Promise.all(reports.map( async (report) => {
       await updateInternalReportStatus(report.report, STATUS_PROCESSING);
       const files = await fetchFilesForReport(report.report);
       if (files.length === FILES_PER_REPORT) {
@@ -39,9 +40,10 @@ app.post('/package-bbcdr-reports/', async function( req, res ) {
         const zipFile = await createZipFile(report.id, files, borderel);
         await addPackage(report.report, zipFile);
         await updateInternalReportStatus(report.report, STATUS_PACKAGED);
+        console.log(`packaged report ${report.id}`);
       }
-    });
-    res.status(202).send({status:202, title: 'processing'});
+    }));
+    console.log('finished processing');
   }
   catch(e) {
     console.log(e);

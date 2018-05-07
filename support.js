@@ -50,12 +50,13 @@ const createZipFile = async function(name, files, borderel) {
   // listen for all archive data to be written
   // 'close' event is fired only when a file descriptor is involved
   output.on('close', function() {
-    console.log(`${filename} was created: ${archive.pointer} bytes`);
+    console.log(`${filename} was created: ${archive.pointer()} bytes`);
   });
   // good practice to catch warnings (ie stat failures and other non-blocking errors)
   archive.on('warning', function(err) {
       throw err;
   });
+
   // good practice to catch this error explicitly
   archive.on('error', function(err) {
     throw err;
