@@ -4,7 +4,6 @@ import archiver from 'archiver';
 import xmlbuilder from 'xmlbuilder';
 
 const filePath = process.env.FILE_PATH || '/data/files/';
-const packagePath = process.env.PACKAGE_PATH || '/data/packages/';
 const STATUS_PROCESSING = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGING";
 const STATUS_PACKAGED = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGED";
 
@@ -30,7 +29,11 @@ const parseResult = function(result) {
  * @return {String}
  */
 const fileUrlToPath = function(fileUrl) {
-  return fileUrl.replace('file:\/\/__SHARE__\/', filePath);
+  return fileUrl.replace('share:\/\/', filePath);
+};
+
+const pathToFileUrl = function(path) {
+  return path.replace(filePath, 'share://');
 };
 
 /**
@@ -130,6 +133,7 @@ const addPackage = async function(report, packagePath) {
 const updateInternalReportStatus = async function(report, status) {
   await update(`
        PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
+       PREFIX dcterms: <http://purl.org/dc/terms/>
        WITH <http://mu.semte.ch/application>
        DELETE {
          ${sparqlEscapeUri(report)} dcterms:modified ?modified.
@@ -138,7 +142,7 @@ const updateInternalReportStatus = async function(report, status) {
        INSERT {
          ${sparqlEscapeUri(report)} a bbcdr:Report;
                                     dcterms:modified ${sparqlEscapeDateTime(new Date())};
-                                    bbcdr:status ${sparqlEscapeUri(status)}
+                                    bbcdr:status ${sparqlEscapeUri(status)}.
        }
        WHERE {
          ${sparqlEscapeUri(report)} dcterms:modified ?modified.
@@ -199,7 +203,7 @@ const fetchReportsToBePackaged = async function() {
          }
        } ORDER BY ASC(?modified)
 `);
-  return parseResult(result).map((r) => r.report);
+  return parseResult(result);
 };
 
 /**
