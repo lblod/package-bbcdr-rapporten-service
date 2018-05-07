@@ -15,8 +15,8 @@ import {
 import request from 'request';
 
 /** Schedule export cron job */
-const cronFrequency = process.env.PACKAGE_CRON_PATTERN || '0 */12 * * * *';
-
+const cronFrequency = process.env.PACKAGE_CRON_PATTERN || '*/30 * * * * *';
+const FILES_PER_REPORT = 2 ;
 
 cleanup();
 
@@ -32,13 +32,17 @@ app.post('/package-bbcdr-reports/', async function( req, res ) {
       return res.status(503).end();
     const reports = await fetchReportsToBePackaged();
     reports.forEach( async (report) => {
-      console.log(report);
-      updateInternalReportStatus(report, STATUS_PROCESSING);
-      const files = await fetchFilesForReport(report);
-      const borderel = createMetadata(report, files);
-      const zipFile = createZipFile(report.id, files, borderel);
-      addPackage(report, zipFile);
-      await updateInternalReportStatus(report, STATUS_PACKAGED);
+      await updateInternalReportStatus(report.report, STATUS_PROCESSING);
+      const files = await fetchFilesForReport(report.report);
+      if (files.length !== FILES_PER_REPORT) {
+        res.status(400)
+          .send({status:400, title: `a report should contain ${FILES_PER_REPORT} file`})
+          .end();
+      }
+      const borderel = await createMetadata(report, files);
+      const zipFile = await createZipFile(report.id, files, borderel);
+      await addPackage(report.report, zipFile);
+      await updateInternalReportStatus(report.report, STATUS_PACKAGED);
     });
     res.status(202).send({status:202, title: 'processing'});
   }
