@@ -34,15 +34,12 @@ app.post('/package-bbcdr-reports/', async function( req, res ) {
     reports.forEach( async (report) => {
       await updateInternalReportStatus(report.report, STATUS_PROCESSING);
       const files = await fetchFilesForReport(report.report);
-      if (files.length !== FILES_PER_REPORT) {
-        res.status(400)
-          .send({status:400, title: `a report should contain ${FILES_PER_REPORT} file`})
-          .end();
+      if (files.length === FILES_PER_REPORT) {
+        const borderel = await createMetadata(report, files);
+        const zipFile = await createZipFile(report.id, files, borderel);
+        await addPackage(report.report, zipFile);
+        await updateInternalReportStatus(report.report, STATUS_PACKAGED);
       }
-      const borderel = await createMetadata(report, files);
-      const zipFile = await createZipFile(report.id, files, borderel);
-      await addPackage(report.report, zipFile);
-      await updateInternalReportStatus(report.report, STATUS_PACKAGED);
     });
     res.status(202).send({status:202, title: 'processing'});
   }
