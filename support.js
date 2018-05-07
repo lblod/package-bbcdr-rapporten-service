@@ -61,11 +61,13 @@ const createZipFile = async function(name, files, borderel) {
   archive.on('error', function(err) {
     throw err;
   });
-  files.forEach( (file) => {
+  archive.pipe(output);
+  files.map( (file) => {
     archive.file(fileUrlToPath(file.file), {name: file.filename});
   });
   archive.file(borderel, {name: 'borderel.xml'});
   await archive.finalize();
+  await fs.unlink(borderel);
   return pathToFileUrl(filename);
 };
 
