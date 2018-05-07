@@ -38,9 +38,9 @@ const fileUrlToPath = function(fileUrl) {
  * containing the provided files and metadata
  * @method createZipFile
  */
-const createZipFile = function(name, files, borderel) {
-  const filename = `${packagePath}/${name}.zip`;
-  var output = fs.createWriteStream(filename);
+const createZipFile = async function(name, files, borderel) {
+  const filename = `${filePath}${name}.zip`;
+  var output = await fs.createWriteStream(filename);
   const archive = archiver('zip', {
     zlib: { level: 9 } // Sets the compression level.
   });
@@ -51,20 +51,18 @@ const createZipFile = function(name, files, borderel) {
   });
   // good practice to catch warnings (ie stat failures and other non-blocking errors)
   archive.on('warning', function(err) {
-    if (err.code === 'ENOENT') {
-      console.log(err);
-    } else {
       throw err;
-    }
   });
   // good practice to catch this error explicitly
   archive.on('error', function(err) {
     throw err;
   });
-  files.forEach( (file) => archive.file(fileUrlToPath(file.file), file.filename));
-  archive.file(borderel, 'borderel.xml');
-  archive.finalize();
-  return `file://__SHARE__/${filename}`;
+  files.forEach( (file) => {
+    archive.file(fileUrlToPath(file.file), {name: file.filename});
+  });
+  archive.file(borderel, {name: 'borderel.xml'});
+  await archive.finalize();
+  return pathToFileUrl(filename);
 };
 
 /**
