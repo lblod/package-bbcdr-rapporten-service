@@ -29,11 +29,11 @@ const parseResult = function(result) {
  * @return {String}
  */
 const fileUrlToPath = function(fileUrl) {
-  return fileUrl.replace('share:\/\/', filePath);
+  return fileUrl.replace('shared:\/\/', filePath);
 };
 
 const pathToFileUrl = function(path) {
-  return path.replace(filePath, 'share://');
+  return path.replace(filePath, 'shared://');
 };
 
 /**
@@ -114,13 +114,22 @@ const createMetadata = async function(report,files,sleutel = 'test') {
  * add package information to a bbcdr report
  * @method addPackage
  */
-const addPackage = async function(report, packagePath) {
+const addPackage = async function(report, packagePath, packageID) {
   await update(`
        PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
+       PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+       PREFIX mu:   <http://mu.semte.ch/vocabularies/core/>
+       PREFIX dbpedia: <http://dbpedia.org/ontology/>
+       PREFIX dcterms: <http://purl.org/dc/terms/>
        WITH <http://mu.semte.ch/application>
        INSERT DATA {
-         ${sparqlEscapeUri(report)} bbcdr:package ${sparqlEscapeUri(packagePath)};
-                                    bbcdr:packagedAt ${sparqlEscapeDateTime(new Date())}.
+         ${sparqlEscapeUri(report)} bbcdr:package ${sparqlEscapeUri(packagePath)}.
+         ${sparqlEscapeUri(packagePath)} a nfo:FileDataObject;
+                                         nfo:fileName ${sparqlEscapeString(`${packageID}.zip`)};
+                                         dcterms:format "application/zip";
+                                         dcterms:created ${sparqlEscapeDateTime(new Date())};
+                                         mu:uuid ${sparqlEscapeString(packageID)};
+                                         dbpedia:fileExtension "zip".
        }
   `);
 };
@@ -173,8 +182,9 @@ const fetchFilesForReport = async function(report) {
        FROM <http://mu.semte.ch/application>
        WHERE {
          ${sparqlEscapeUri(report)} a bbcdr:Report;
-                                    nie:hasPart ?file.
-         ?file nfo:fileName ?filename;
+                                    nie:hasPart ?uploadFile.
+         ?uploadFile nfo:fileName ?filename.
+         ?file nie:dataSource ?uploadFile;
                dcterms:format ?format;
                nfo:fileSize ?size.
        }
