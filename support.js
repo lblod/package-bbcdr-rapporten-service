@@ -97,9 +97,9 @@ const createMetadata = async function(report,files,sleutel = 'test') {
             ParameterWaarde: 'AANLEVERING GEDAAN'
           }
         }
-      ],
-      'ns1:Bestanden': files.map( (file => { return {Bestand: {Bestandsnaam: file.filename}};}))
-    }
+      ]
+    },
+    'ns1:Bestanden': files.map( (file => { return {Bestand: {Bestandsnaam: file.filename}};}))
   }
   );
   const output = xml.end({pretty: true});
