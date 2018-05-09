@@ -29,11 +29,11 @@ const parseResult = function(result) {
  * @return {String}
  */
 const fileUrlToPath = function(fileUrl) {
-  return fileUrl.replace('shared:\/\/', filePath);
+  return fileUrl.replace('share:\/\/', filePath);
 };
 
 const pathToFileUrl = function(path) {
-  return path.replace(filePath, 'shared://');
+  return path.replace(filePath, 'share://');
 };
 
 /**
