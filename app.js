@@ -44,9 +44,10 @@ app.post('/package-bbcdr-reports/', async function( req, res ) {
           await addPackage(report.report, zipFile, zipUUID);
           await updateInternalReportStatus(report.report, STATUS_PACKAGED);
           console.log(`Packaged BBCDR report ${report.id} successfully`);
+        } else {
+          console.log(`Failed to package BBCDR report ${report.id}: only ${files.length} files are attached to the report while ${FILES_PER_REPORT} files are expected`);
+          await updateInternalReportStatus(report.report, STATUS_PACKAGING_FAILED);
         }
-        console.log(`Failed to package BBCDR report ${report.id}: only ${files.length} files are attached to the report while ${FILES_PER_REPORT} files are expected`);
-        await updateInternalReportStatus(report.report, STATUS_PACKAGING_FAILED);
       } catch(err) {
         console.log(`Failed to package BBCDR report ${report.id}: ${err}`);
         await updateInternalReportStatus(report.report, STATUS_PACKAGING_FAILED);        
