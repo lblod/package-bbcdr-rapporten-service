@@ -104,7 +104,6 @@ const createMetadata = async function(report,files,sleutel = 'test') {
   );
   const output = xml.end({pretty: true});
   const filename = `${filePath}${report.id}-borderel.xml`;
-  console.log( filename );
   await new Promise(function (resolve, reject) {
     fs.writeFile(filename, output, (err) => {
       if (err)
