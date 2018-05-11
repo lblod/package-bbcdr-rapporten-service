@@ -10,7 +10,8 @@ import {
   fetchReportsToBePackaged,
   fetchFilesForReport,
   STATUS_PROCESSING,
-  STATUS_PACKAGED
+  STATUS_PACKAGED,
+  STATUS_PACKAGING_FAILED  
 } from './support';
 import request from 'request';
 
@@ -31,22 +32,28 @@ app.post('/package-bbcdr-reports/', async function( req, res ) {
     if (await isRunning())
       return res.status(503).end();
     const reports = await fetchReportsToBePackaged();
-    res.status(202).send({status:202, title: 'processing'});
-    await Promise.all(reports.map( async (report) => {
-      await updateInternalReportStatus(report.report, STATUS_PROCESSING);
-      const files = await fetchFilesForReport(report.report);
-      if (files.length === FILES_PER_REPORT) {
-        const borderel = await createMetadata(report, files);
-        const zipUUID = uuid();
-        const zipFile = await createZipFile(zipUUID, files, borderel);
-        await addPackage(report.report, zipFile, zipUUID);
-        await updateInternalReportStatus(report.report, STATUS_PACKAGED);
-        console.log(`packaged report ${report.id}`);
+    Promise.all(reports.map( async (report) => { // don't await this since packaging is executed async
+      console.log(`Start packaging BBCDR report ${report.id}`);
+      try {
+        await updateInternalReportStatus(report.report, STATUS_PROCESSING);
+        const files = await fetchFilesForReport(report.report);
+        if (files.length === FILES_PER_REPORT) {
+          const borderel = await createMetadata(report, files);
+          const zipUUID = uuid();
+          const zipFile = await createZipFile(zipUUID, files, borderel);
+          await addPackage(report.report, zipFile, zipUUID);
+          await updateInternalReportStatus(report.report, STATUS_PACKAGED);
+          console.log(`Packaged BBCDR report ${report.id} successfully`);
+        }
+      } catch(err) {
+        console.log(`Failed to package BBCDR report ${report.id}: ${err}`);
+        await updateInternalReportStatus(report.report, STATUS_PACKAGING_FAILED);        
       }
     }));
-    console.log('finished processing');
+    return res.status(202).send({status:202, title: 'processing'});    
   }
   catch(e) {
     console.log(e);
+    throw e;
   }
 });

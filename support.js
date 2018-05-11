@@ -6,7 +6,7 @@ import xmlbuilder from 'xmlbuilder';
 const filePath = process.env.FILE_PATH || '/data/files/';
 const STATUS_PROCESSING = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGING";
 const STATUS_PACKAGED = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGED";
-
+const STATUS_PACKAGING_FAILED = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGING_FAILED";
 
 /**
  * convert results of select query to an array of objects.
@@ -104,8 +104,14 @@ const createMetadata = async function(report,files,sleutel = 'test') {
   );
   const output = xml.end({pretty: true});
   const filename = `${filePath}${report.id}-borderel.xml`;
-  await fs.writeFile(filename, output, (err) => {
-    if (err) throw err;
+  console.log( filename );
+  await new Promise(function (resolve, reject) {
+    fs.writeFile(filename, output, (err) => {
+      if (err)
+        reject(err);
+      else
+        resolve();
+    });
   });
   return filename;
 };
@@ -251,4 +257,4 @@ async function isRunning() {
      }`);
   return queryResult.boolean;
 }
-export { isRunning, cleanup, addPackage, createZipFile, createMetadata, updateInternalReportStatus, fetchReportsToBePackaged, fetchFilesForReport, STATUS_PROCESSING, STATUS_PACKAGED };
+export { isRunning, cleanup, addPackage, createZipFile, createMetadata, updateInternalReportStatus, fetchReportsToBePackaged, fetchFilesForReport, STATUS_PROCESSING, STATUS_PACKAGED, STATUS_PACKAGING_FAILED };
