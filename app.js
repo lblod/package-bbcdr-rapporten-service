@@ -15,7 +15,7 @@ import {
 import request from 'request';
 
 /** Schedule export cron job */
-const cronFrequency = process.env.PACKAGE_CRON_PATTERN || '*/30 * * * * *';
+const cronFrequency = process.env.PACKAGE_CRON_PATTERN || '* */12 * * * *';
 const FILES_PER_REPORT = 2 ;
 
 cleanup();
