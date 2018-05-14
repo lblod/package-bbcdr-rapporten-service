@@ -38,7 +38,7 @@ app.post('/package-bbcdr-reports/', async function( req, res ) {
         await updateInternalReportStatus(report.report, STATUS_PROCESSING);
         const files = await fetchFilesForReport(report.report);
         if (files.length === FILES_PER_REPORT) {
-          const borderel = await createMetadata(report, files);
+          const borderel = await createMetadata(report, files, report.id);
           const zipUUID = uuid();
           const zipFile = await createZipFile(zipUUID, files, borderel);
           await addPackage(report.report, zipFile, zipUUID);
