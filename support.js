@@ -1,9 +1,11 @@
-import { query, update, uuid, sparqlEscapeString, sparqlEscapeDateTime, sparqlEscapeUri } from 'mu';
+import { uuid, sparqlEscapeString, sparqlEscapeDateTime, sparqlEscapeUri } from 'mu';
+import { querySudo as query, updateSudo as update } from './auth-sudo';
 import fs from 'fs';
 import archiver from 'archiver';
 import xmlbuilder from 'xmlbuilder';
 
 const filePath = process.env.FILE_PATH || '/data/files/';
+const fileGraph = process.env.FILE_GRAPH || 'http://mu.semte.ch/graphs/public';
 const STATUS_PROCESSING = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGING";
 const STATUS_PACKAGED = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGED";
 const STATUS_PACKAGING_FAILED = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGING_FAILED";
@@ -119,22 +121,26 @@ const createMetadata = async function(report,files,sleutel = 'test') {
  * add package information to a bbcdr report
  * @method addPackage
  */
-const addPackage = async function(report, packagePath, packageID) {
+const addPackage = async function(report, packagePath, packageID, graph) {
   await update(`
        PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
        PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
        PREFIX mu:   <http://mu.semte.ch/vocabularies/core/>
        PREFIX dbpedia: <http://dbpedia.org/ontology/>
        PREFIX dcterms: <http://purl.org/dc/terms/>
-       WITH <http://mu.semte.ch/application>
+
        INSERT DATA {
-         ${sparqlEscapeUri(report)} bbcdr:package ${sparqlEscapeUri(packagePath)}.
-         ${sparqlEscapeUri(packagePath)} a nfo:FileDataObject;
-                                         nfo:fileName ${sparqlEscapeString(`${packageID}.zip`)};
-                                         dcterms:format "application/zip";
-                                         dcterms:created ${sparqlEscapeDateTime(new Date())};
-                                         mu:uuid ${sparqlEscapeString(packageID)};
-                                         dbpedia:fileExtension "zip".
+         GRAPH <${graph}> {
+             ${sparqlEscapeUri(report)} bbcdr:package ${sparqlEscapeUri(packagePath)}.
+         }
+         GRAPH <${fileGraph}> {
+             ${sparqlEscapeUri(packagePath)} a nfo:FileDataObject;
+                                             nfo:fileName ${sparqlEscapeString(`${packageID}.zip`)};
+                                             dcterms:format "application/zip";
+                                             dcterms:created ${sparqlEscapeDateTime(new Date())};
+                                             mu:uuid ${sparqlEscapeString(packageID)};
+                                             dbpedia:fileExtension "zip".
+         }
        }
   `);
 };
@@ -143,11 +149,12 @@ const addPackage = async function(report, packagePath, packageID) {
  * update the internal status of a report
  * @method updateInternalReportStatus
  */
-const updateInternalReportStatus = async function(report, status) {
+const updateInternalReportStatus = async function(report, status, graph) {
   await update(`
        PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
        PREFIX dcterms: <http://purl.org/dc/terms/>
-       WITH <http://mu.semte.ch/application>
+
+       WITH <${graph}>
        DELETE {
          ${sparqlEscapeUri(report)} dcterms:modified ?modified.
          ${sparqlEscapeUri(report)} bbcdr:status ?status.
@@ -175,7 +182,7 @@ const updateInternalReportStatus = async function(report, status) {
  * @param {IRI} reportIRI
  * @return {Array}
  */
-const fetchFilesForReport = async function(report) {
+const fetchFilesForReport = async function(report, graph) {
   const result = await query(`
        PREFIX mu:   <http://mu.semte.ch/vocabularies/core/>
        PREFIX nie:     <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
@@ -183,15 +190,20 @@ const fetchFilesForReport = async function(report) {
        PREFIX dcterms: <http://purl.org/dc/terms/>
        PREFIX adms:    <http://www.w3.org/ns/adms#>
        PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
+
        SELECT ?file ?filename ?format ?size
-       FROM <http://mu.semte.ch/application>
        WHERE {
-         ${sparqlEscapeUri(report)} a bbcdr:Report;
-                                    nie:hasPart ?uploadFile.
-         ?uploadFile nfo:fileName ?filename.
-         ?file nie:dataSource ?uploadFile;
-               dcterms:format ?format;
-               nfo:fileSize ?size.
+         GRAPH <${graph}> {
+             ${sparqlEscapeUri(report)} a bbcdr:Report;
+                                        nie:hasPart ?uploadFile.
+         }
+
+         GRAPH <${fileGraph}> {
+             ?uploadFile nfo:fileName ?filename.
+             ?file nie:dataSource ?uploadFile;
+                   dcterms:format ?format;
+                   nfo:fileSize ?size.
+         }
        }
 `);
   return parseResult(result);
@@ -210,17 +222,19 @@ const fetchReportsToBePackaged = async function() {
        PREFIX dcterms: <http://purl.org/dc/terms/>
        PREFIX adms:    <http://www.w3.org/ns/adms#>
        PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
-       SELECT ?report ?id
-       FROM <http://mu.semte.ch/application>
+
+       SELECT ?uri ?id ?graph
        WHERE {
-         ?report a bbcdr:Report;
-                 adms:status <http://data.lblod.info/document-statuses/verstuurd>;
-                 mu:uuid ?id;
-                 dcterms:modified ?modified.
-         FILTER NOT EXISTS {
-            ?report bbcdr:status ?status.
+         GRAPH ?graph {
+             ?uri a bbcdr:Report;
+                     adms:status <http://data.lblod.info/document-statuses/verstuurd>;
+                     mu:uuid ?id;
+                     dcterms:modified ?modified.
+             FILTER NOT EXISTS {
+                ?uri bbcdr:status ?status.
+             }
          }
-       } ORDER BY ASC(?modified)
+      } ORDER BY ASC(?modified)
 `);
   return parseResult(result);
 };
@@ -231,12 +245,16 @@ const fetchReportsToBePackaged = async function() {
 const cleanup = async function() {
   await update(`
      PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
-     WITH <http://mu.semte.ch/application>
+     
      DELETE {
-       ?report bbcdr:status ${sparqlEscapeUri(STATUS_PROCESSING)}.
+       GRAPH ?g {
+           ?report bbcdr:status ${sparqlEscapeUri(STATUS_PROCESSING)}.
+       }
      } WHERE {
-       ?report a bbcdr:Report;
-               bbcdr:status ${sparqlEscapeUri(STATUS_PROCESSING)}.
+       GRAPH ?g {
+           ?report a bbcdr:Report;
+                     bbcdr:status ${sparqlEscapeUri(STATUS_PROCESSING)}.
+       }
      }
   `);
 };
@@ -248,10 +266,11 @@ const cleanup = async function() {
 async function isRunning() {
   const queryResult = await query(`
      PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
+
      ASK {
-       GRAPH <http://mu.semte.ch/application> {
+       GRAPH ?g {
          ?report a bbcdr:Report;
-         bbcdr:status ${sparqlEscapeUri(STATUS_PROCESSING)}.
+                 bbcdr:status ${sparqlEscapeUri(STATUS_PROCESSING)}.
        }
      }`);
   return queryResult.boolean;

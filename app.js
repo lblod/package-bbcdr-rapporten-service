@@ -35,22 +35,22 @@ app.post('/package-bbcdr-reports/', async function( req, res, next ) {
     Promise.all(reports.map( async (report) => { // don't await this since packaging is executed async
       console.log(`Start packaging BBCDR report ${report.id}`);
       try {
-        await updateInternalReportStatus(report.report, STATUS_PROCESSING);
-        const files = await fetchFilesForReport(report.report);
+        await updateInternalReportStatus(report.uri, STATUS_PROCESSING, report.graph);
+        const files = await fetchFilesForReport(report.uri, report.graph);
         if (files.length === FILES_PER_REPORT) {
           const borderel = await createMetadata(report, files, report.id);
           const zipUUID = uuid();
           const zipFile = await createZipFile(zipUUID, files, borderel);
-          await addPackage(report.report, zipFile, zipUUID);
-          await updateInternalReportStatus(report.report, STATUS_PACKAGED);
+          await addPackage(report.uri, zipFile, zipUUID, report.graph);
+          await updateInternalReportStatus(report.uri, STATUS_PACKAGED, report.graph);
           console.log(`Packaged BBCDR report ${report.id} successfully`);
         } else {
           console.log(`Failed to package BBCDR report ${report.id}: only ${files.length} files are attached to the report while ${FILES_PER_REPORT} files are expected`);
-          await updateInternalReportStatus(report.report, STATUS_PACKAGING_FAILED);
+          await updateInternalReportStatus(report.uri, STATUS_PACKAGING_FAILED, report.graph);
         }
       } catch(err) {
         console.log(`Failed to package BBCDR report ${report.id}: ${err}`);
-        await updateInternalReportStatus(report.report, STATUS_PACKAGING_FAILED);        
+        await updateInternalReportStatus(report.uri, STATUS_PACKAGING_FAILED, report.graph);
       }
     }));
     return res.status(202).send({status:202, title: 'processing'});    
