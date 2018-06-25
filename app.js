@@ -1,5 +1,5 @@
 import { CronJob } from 'cron';
-import { app, uuid } from 'mu';
+import { app, uuid, errorHandler } from 'mu';
 import {
   addPackage,
   createMetadata,
@@ -22,12 +22,12 @@ const FILES_PER_REPORT = 2 ;
 cleanup();
 
 new CronJob(cronFrequency, function() {
-  console.log(`packaging triggered by cron job at ${new Date().toISOString()}`);
+  console.log(`BBCDR packaging triggered by cron job at ${new Date().toISOString()}`);
   request.post('http://localhost/package-bbcdr-reports/');
 }, null, true);
 
 
-app.post('/package-bbcdr-reports/', async function( req, res ) {
+app.post('/package-bbcdr-reports/', async function( req, res, next ) {
   try {
     if (await isRunning())
       return res.status(503).end();
@@ -56,7 +56,8 @@ app.post('/package-bbcdr-reports/', async function( req, res ) {
     return res.status(202).send({status:202, title: 'processing'});    
   }
   catch(e) {
-    console.log(e);
-    throw e;
+    return next(new Error(e.message));
   }
 });
+
+app.use(errorHandler);
