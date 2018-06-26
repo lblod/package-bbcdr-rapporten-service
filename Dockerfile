@@ -1,4 +1,4 @@
-FROM semtech/mu-javascript-template
+FROM semtech/mu-javascript-template:1.3.1
 LABEL maintainer=info@redpencil.io
 
 ENV FILE_PATH '/data/files/'
