@@ -1,6 +1,6 @@
 import { uuid, sparqlEscapeString, sparqlEscapeDateTime, sparqlEscapeUri } from 'mu';
 import { querySudo as query, updateSudo as update } from './auth-sudo';
-import fs from 'fs';
+import fs from 'fs-extra';
 import archiver from 'archiver';
 import xmlbuilder from 'xmlbuilder';
 
@@ -106,14 +106,7 @@ const createMetadata = async function(report,files,sleutel = 'test') {
   );
   const output = xml.end({pretty: true});
   const filename = `${filePath}${report.id}-borderel.xml`;
-  await new Promise(function (resolve, reject) {
-    fs.writeFile(filename, output, (err) => {
-      if (err)
-        reject(err);
-      else
-        resolve();
-    });
-  });
+  await fs.writeFile(filename, output);
   return filename;
 };
 
