@@ -7,7 +7,7 @@ To add the service to your stack, add the following snippet to docker-compose.ym
 ```
 services:
   packagereports:
-    image: lblod/package-bbcdr-rapporten-service
+    image: lblod/package-bbcdr-rapporten-service:0.2.0
 ```
 
 ## REST API
@@ -22,7 +22,7 @@ Returns `503 Service Unavailable` if already running
 ```
 services:
   packagereports:
-    image: semtech/mu-javascript-template:1.2.1
+    image: semtech/mu-javascript-template:1.3.1
     ports:
       - 8888:80
     environment:
