@@ -32,8 +32,13 @@ app.post('/package-bbcdr-reports/', async function( req, res, next ) {
     if (await isRunning())
       return res.status(503).end();
     const reports = await fetchReportsToBePackaged();
+    if (reports.length == 0) {
+      console.log(`No BBCDR reports found that need to be packaged`);
+      return res.status(204).end();
+    }
+    console.log(`Found ${reports.length} BBCDR reports to package`);
     Promise.all(reports.map( async (report) => { // don't await this since packaging is executed async
-      console.log(`Start packaging BBCDR report ${report.id}`);
+      console.log(`Start packaging BBCDR report ${report.id} found in graph <${report.graph}>`);
       try {
         await updateInternalReportStatus(report.uri, STATUS_PROCESSING, report.graph);
         const files = await fetchFilesForReport(report.uri, report.graph);
