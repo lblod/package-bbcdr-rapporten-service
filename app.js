@@ -2,6 +2,7 @@ import { CronJob } from 'cron';
 import { app, uuid, errorHandler } from 'mu';
 import {
   addPackage,
+  generateZipFileName,
   createMetadata,
   createZipFile,
   cleanup,
@@ -11,7 +12,7 @@ import {
   fetchFilesForReport,
   STATUS_PROCESSING,
   STATUS_PACKAGED,
-  STATUS_PACKAGING_FAILED  
+  STATUS_PACKAGING_FAILED
 } from './support';
 import request from 'request';
 
@@ -49,8 +50,9 @@ app.post('/package-bbcdr-reports/', async function( req, res, next ) {
         if (files.length === FILES_PER_REPORT) {
           const borderel = await createMetadata(report, files, report.kbonummer);
           const zipUUID = uuid();
-          const zipFile = await createZipFile(zipUUID, files, borderel);
-          await addPackage(report.uri, zipFile, zipUUID, report.graph);
+          const fileName = generateZipFileName(report, zipUUID);
+          const zipFile = await createZipFile(fileName, files, borderel);
+          await addPackage(report.uri, zipFile, zipUUID, fileName, report.graph);
           await updateInternalReportStatus(report.uri, STATUS_PACKAGED, report.graph);
           console.log(`Packaged BBCDR report ${report.id} successfully`);
         } else {
@@ -62,7 +64,7 @@ app.post('/package-bbcdr-reports/', async function( req, res, next ) {
         await updateInternalReportStatus(report.uri, STATUS_PACKAGING_FAILED, report.graph);
       }
     }));
-    return res.status(202).send({status:202, title: 'processing'});    
+    return res.status(202).send({status:202, title: 'processing'});
   }
   catch(e) {
     return next(new Error(e.message));

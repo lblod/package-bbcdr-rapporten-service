@@ -38,13 +38,19 @@ const pathToFileUrl = function(path) {
   return path.replace(filePath, 'share://');
 };
 
+const generateZipFileName = function(report, zipUUID){
+  let timestamp = new Date().toISOString().replace(/[.:]/g, '_');
+  let bestuur = `${report.classificatieNaam}_${report.naam}`.replace(/[^ -~]+/g, ""); //removes non-ascii, non printable
+  return `BBCDR_${bestuur}_${timestamp}_${zipUUID}.zip`;
+};
+
 /**
  * create zip file in packagePath with the provided name(.zip),
  * containing the provided files and metadata
  * @method createZipFile
  */
 const createZipFile = async function(name, files, borderel) {
-  const filename = `${filePath}${name}.zip`;
+  const filename = `${filePath}${name}`;
   var output = await fs.createWriteStream(filename);
   const archive = archiver('zip', {
     zlib: { level: 9 } // Sets the compression level.
@@ -114,7 +120,7 @@ const createMetadata = async function(report,files,sleutel = 'test') {
  * add package information to a bbcdr report
  * @method addPackage
  */
-const addPackage = async function(report, packagePath, packageID, graph) {
+const addPackage = async function(report, packagePath, packageID, fileName, graph) {
   await update(`
        PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
        PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
@@ -128,7 +134,7 @@ const addPackage = async function(report, packagePath, packageID, graph) {
          }
          GRAPH <${fileGraph}> {
              ${sparqlEscapeUri(packagePath)} a nfo:FileDataObject;
-                                             nfo:fileName ${sparqlEscapeString(`${packageID}.zip`)};
+                                             nfo:fileName ${sparqlEscapeString(`${fileName}`)};
                                              dcterms:format "application/zip";
                                              dcterms:created ${sparqlEscapeDateTime(new Date())};
                                              mu:uuid ${sparqlEscapeString(packageID)};
@@ -294,4 +300,4 @@ async function isRunning() {
      }`);
   return queryResult.boolean;
 }
-export { isRunning, cleanup, addPackage, createZipFile, createMetadata, updateInternalReportStatus, fetchReportsToBePackaged, fetchFilesForReport, STATUS_PROCESSING, STATUS_PACKAGED, STATUS_PACKAGING_FAILED };
+export { isRunning, cleanup, addPackage, generateZipFileName, createZipFile, createMetadata, updateInternalReportStatus, fetchReportsToBePackaged, fetchFilesForReport, STATUS_PROCESSING, STATUS_PACKAGED, STATUS_PACKAGING_FAILED };
