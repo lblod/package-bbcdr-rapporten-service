@@ -216,24 +216,43 @@ const fetchFilesForReport = async function(report, graph) {
  */
 const fetchReportsToBePackaged = async function() {
   const result = await query(`
+       PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+       PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
        PREFIX mu:   <http://mu.semte.ch/vocabularies/core/>
        PREFIX nie:     <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
        PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
        PREFIX dcterms: <http://purl.org/dc/terms/>
        PREFIX adms:    <http://www.w3.org/ns/adms#>
        PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
+       PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-       SELECT ?uri ?id ?graph
+
+       SELECT ?uri ?id ?graph ?bestuurseenheid ?naam ?kbonummer ?classificatieNaam
        WHERE {
+
          GRAPH ?graph {
              ?uri a bbcdr:Report;
                      adms:status <http://data.lblod.info/document-statuses/verstuurd>;
                      mu:uuid ?id;
-                     dcterms:modified ?modified.
+                     dcterms:modified ?modified;
+                     dcterms:subject ?bestuurseenheid.
              FILTER NOT EXISTS {
                 ?uri bbcdr:status ?status.
              }
          }
+
+         GRAPH <http://mu.semte.ch/graphs/public> {
+             ?bestuurseenheid skos:prefLabel ?naam;
+                               ext:kbonummer ?kbonummer;
+                               besluit:classificatie ?classificatie;
+                               mu:uuid ?groupId .
+              ?classificatie skos:prefLabel ?classificatieNaam.
+
+         }
+
+         FILTER(?graph = IRI(CONCAT("http://mu.semte.ch/graphs/organizations/", ?groupId, "/LoketLB-bbcdrGebruiker")))
+
       } ORDER BY ASC(?modified)
 `);
   return parseResult(result);
@@ -245,7 +264,7 @@ const fetchReportsToBePackaged = async function() {
 const cleanup = async function() {
   await update(`
      PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
-     
+
      DELETE {
        GRAPH ?g {
            ?report bbcdr:status ${sparqlEscapeUri(STATUS_PROCESSING)}.
