@@ -42,8 +42,12 @@ app.post('/package-bbcdr-reports/', async function( req, res, next ) {
       try {
         await updateInternalReportStatus(report.uri, STATUS_PROCESSING, report.graph);
         const files = await fetchFilesForReport(report.uri, report.graph);
+
+        if(!report.kbonummer)
+          throw "Expected KBO nummer...";
+
         if (files.length === FILES_PER_REPORT) {
-          const borderel = await createMetadata(report, files, report.id);
+          const borderel = await createMetadata(report, files, report.kbonummer);
           const zipUUID = uuid();
           const zipFile = await createZipFile(zipUUID, files, borderel);
           await addPackage(report.uri, zipFile, zipUUID, report.graph);
