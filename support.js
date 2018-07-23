@@ -40,7 +40,7 @@ const pathToFileUrl = function(path) {
 
 const generateZipFileName = function(report, zipUUID){
   let timestamp = new Date().toISOString().replace(/[.:]/g, '_');
-  let bestuur = `${report.classificatieNaam}_${report.naam}`.replace(/[^ -~]+/g, ""); //removes non-ascii, non printable
+  let bestuur = `${report.classificatieNaam}_${report.naam}`.replace(/[^a-z0-9]/gi, ''); //allow only alphanumeric
   return `BBCDR_${bestuur}_${timestamp}_${zipUUID}.zip`;
 };
 
