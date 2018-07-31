@@ -89,6 +89,7 @@ const createMetadata = async function(report,files,sleutel = 'test') {
           .att('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
           .att('xmlns:ns1', 'http://MFT-01-00.abb.vlaanderen.be/Borderel');
   xml.ele({
+    'ns1:Bestanden': files.map( (file => { return {Bestand: {Bestandsnaam: file.filename}};})),
     'ns1:RouteringsMetadata': {
       Entiteit:'ABB',
       Toepassing: 'BBC DR',
@@ -106,8 +107,7 @@ const createMetadata = async function(report,files,sleutel = 'test') {
           }
         }
       ]
-    },
-    'ns1:Bestanden': files.map( (file => { return {Bestand: {Bestandsnaam: file.filename}};}))
+    }
   }
   );
   const output = xml.end({pretty: true});
