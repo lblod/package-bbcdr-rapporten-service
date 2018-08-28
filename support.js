@@ -40,7 +40,7 @@ const pathToFileUrl = function(path) {
 
 const generateZipFileName = function(report, zipUUID){
   let timestamp = new Date().toISOString().replace(/[.:]/g, '_');
-  let bestuur = `${report.classificatieNaam}_${report.naam}`.replace(/[^ -~]+/g, ""); //removes non-ascii, non printable
+  let bestuur = `${report.classificatieNaam}_${report.naam}`.replace(/[^a-z0-9]/gi, ''); //allow only alphanumeric
   return `BBCDR_${bestuur}_${timestamp}_${zipUUID}.zip`;
 };
 
@@ -89,6 +89,7 @@ const createMetadata = async function(report,files,sleutel = 'test') {
           .att('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
           .att('xmlns:ns1', 'http://MFT-01-00.abb.vlaanderen.be/Borderel');
   xml.ele({
+    'ns1:Bestanden': files.map( (file => { return {Bestand: {Bestandsnaam: file.filename}};})),
     'ns1:RouteringsMetadata': {
       Entiteit:'ABB',
       Toepassing: 'BBC DR',
@@ -106,8 +107,7 @@ const createMetadata = async function(report,files,sleutel = 'test') {
           }
         }
       ]
-    },
-    'ns1:Bestanden': files.map( (file => { return {Bestand: {Bestandsnaam: file.filename}};}))
+    }
   }
   );
   const output = xml.end({pretty: true});
