@@ -70,7 +70,7 @@ const createZipFile = async function(name, files, borderel) {
   });
   archive.pipe(output);
   files.map( (file) => {
-    const filename = file.filename.replace(/[^a-z0-9\.]/gi, '');
+    const filename = file.filename.replace(/[^a-zA-Z0-9\.-_]/gi, '');
     archive.file(fileUrlToPath(file.file), {name: filename});
   });
   archive.file(borderel, {name: 'borderel.xml'});
