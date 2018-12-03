@@ -1,6 +1,6 @@
 {
   "name": "package-bbcdr-rapporten-service",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Microservice to generate packages based on bbcdr report information",
   "dependencies": {
     "archiver": "^2.1.1",
