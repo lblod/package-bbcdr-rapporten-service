@@ -43,6 +43,10 @@ const generateZipFileName = function(report, zipUUID){
   return `BBCDR_${report.kbonummer}_${timestamp}_${zipUUID}.zip`;
 };
 
+const normalizeFileName = function(filename) {
+  return filename.replace(/[^a-zA-Z0-9\.-_]/gi, '');
+};
+
 /**
  * create zip file in packagePath with the provided name(.zip),
  * containing the provided files and metadata
@@ -70,7 +74,7 @@ const createZipFile = async function(name, files, borderel) {
   });
   archive.pipe(output);
   files.map( (file) => {
-    const filename = file.filename.replace(/[^a-zA-Z0-9\.-_]/gi, '');
+    const filename = normalizeFileName(file.filename);
     archive.file(fileUrlToPath(file.file), {name: filename});
   });
   archive.file(borderel, {name: 'borderel.xml'});
@@ -89,7 +93,7 @@ const createMetadata = async function(report,files,sleutel = 'test') {
           .att('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
           .att('xmlns:ns1', 'http://MFT-01-00.abb.vlaanderen.be/Borderel');
   xml.ele({
-    'ns1:Bestanden': files.map( (file => { return {Bestand: {Bestandsnaam: file.filename}};})),
+    'ns1:Bestanden': files.map( (file => { return {Bestand: {Bestandsnaam: normalizeFileName(file.filename)}};})),
     'ns1:RouteringsMetadata': {
       Entiteit:'ABB',
       Toepassing: 'BBC DR',
