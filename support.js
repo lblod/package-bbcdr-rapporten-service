@@ -5,7 +5,6 @@ import archiver from 'archiver';
 import xmlbuilder from 'xmlbuilder';
 
 const filePath = process.env.FILE_PATH || '/data/files/';
-const fileGraph = process.env.FILE_GRAPH || 'http://mu.semte.ch/graphs/public';
 const STATUS_PROCESSING = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGING";
 const STATUS_PACKAGED = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGED";
 const STATUS_PACKAGING_FAILED = "http://mu.semte.ch/vocabularies/ext/bbcdr-status/PACKAGING_FAILED";
@@ -135,8 +134,6 @@ const addPackage = async function(report, packagePath, packageID, fileName, grap
        INSERT DATA {
          GRAPH <${graph}> {
              ${sparqlEscapeUri(report)} bbcdr:package ${sparqlEscapeUri(packagePath)}.
-         }
-         GRAPH <${fileGraph}> {
              ${sparqlEscapeUri(packagePath)} a nfo:FileDataObject;
                                              nfo:fileName ${sparqlEscapeString(`${fileName}`)};
                                              dcterms:format "application/zip";
@@ -206,9 +203,7 @@ const fetchFilesForReport = async function(report, graph) {
          GRAPH <${graph}> {
              ${sparqlEscapeUri(report)} a bbcdr:Report;
                                         nie:hasPart ?uploadFile.
-         }
 
-         GRAPH <${fileGraph}> {
              ?uploadFile nfo:fileName ?filename.
              ?file nie:dataSource ?uploadFile;
                    dcterms:format ?format;
