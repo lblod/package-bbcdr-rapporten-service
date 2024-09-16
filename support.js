@@ -198,7 +198,7 @@ const fetchFilesForReport = async function(report, graph) {
        PREFIX adms:    <http://www.w3.org/ns/adms#>
        PREFIX bbcdr: <http://mu.semte.ch/vocabularies/ext/bbcdr/>
 
-       SELECT ?file ?filename ?format ?size
+       SELECT DISTINCT ?file ?filename ?format ?size
        WHERE {
          GRAPH <${graph}> {
              ${sparqlEscapeUri(report)} a bbcdr:Report;
@@ -233,7 +233,7 @@ const fetchReportsToBePackaged = async function() {
        PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
 
-       SELECT ?uri ?id ?graph ?bestuurseenheid ?naam ?kbonummer ?classificatieNaam
+       SELECT DISTINCT ?uri ?id ?graph ?bestuurseenheid ?naam ?kbonummer ?classificatieNaam
        WHERE {
 
          GRAPH ?graph {
